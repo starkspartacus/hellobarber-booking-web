@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hellobarber-booking-web
 
-## Getting Started
+Application web **Next.js 16** pour la réservation publique et la boutique en ligne des salons KOUP (HelloBarber). Les clients accèdent via un lien du type `/r/mon-salon` sans modifier le backend existant.
 
-First, run the development server:
+## Prérequis
+
+- Node.js 20+
+- API HelloBarber en cours d'exécution (par défaut `http://127.0.0.1:7700/api`)
+
+## Installation
+
+```bash
+cd hellobarber-booking-web
+npm install
+cp .env.example .env.local
+```
+
+Éditez `.env.local` :
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:7700/api
+NEXT_PUBLIC_DEEP_LINK_SCHEME=koup
+```
+
+## Développement
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrez [http://localhost:3000](http://localhost:3000). Testez un salon avec son slug public, par exemple [http://localhost:3000/r/votre-slug](http://localhost:3000/r/votre-slug).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Description |
+|-------|-------------|
+| `/` | Landing KOUP |
+| `/r/[slug]` | Fiche salon, services, avis, aperçu boutique |
+| `/r/[slug]/book` | Assistant RDV (service → date → créneau → invité → confirmation) |
+| `/r/[slug]/shop` | Grille produits + panier |
+| `/r/[slug]/shop/checkout` | Checkout invité + commande |
+| `/r/[slug]/success` | Confirmation RDV ou commande |
 
-## Learn More
+## Checkout invité
 
-To learn more about Next.js, take a look at the following resources:
+Aligné sur l'app Flutter :
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. `POST /auth/register` avec `passwordHash` (7 caractères aléatoires) et email `guest_{timestamp}@hellobarber.guest` si l'email est vide
+2. `POST /salons/:id/appointments` ou `POST /salons/:id/orders` avec le JWT reçu
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Build production
 
-## Deploy on Vercel
+```bash
+npm run build
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Déploiement (Vercel recommandé)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Importez le dépôt dans Vercel
+2. Variables d'environnement :
+   - `NEXT_PUBLIC_API_URL` → URL de production de l'API (ex. `https://api-hellobarber.haut-numerique.com/api`)
+   - `NEXT_PUBLIC_DEEP_LINK_SCHEME=koup`
+   - Optionnel : `NEXT_PUBLIC_PLAY_STORE_URL`, `NEXT_PUBLIC_APP_STORE_URL`
+3. Domaine personnalisé (ex. `booking.koup.app`) pointant vers le projet
+4. Partagez les liens `https://booking.koup.app/r/{bookingSlug}` depuis l'app pro
+
+### Autres hébergeurs
+
+Tout hébergeur supportant Next.js 16 (Node standalone, Docker, etc.) fonctionne. Exemple Docker :
+
+```dockerfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+Activez `output: "standalone"` dans `next.config.ts` si vous utilisez cette image.
+
+## Stack
+
+- Next.js 16 App Router, TypeScript, Tailwind CSS 4
+- Axios, Zustand (panier persisté)
+- Thème sombre KOUP (#131313 / #FFC37E), touches type Duolingo (cartes arrondies, barre de progression, badges)
+
+## API utilisées
+
+- `GET /salons/resolve-booking/:slug`
+- `GET /salons/:id/detail`
+- `GET /salons/:id/products`
+- `GET /salons/:id/available-slots`
+- `POST /auth/register`, `POST /auth/login`
+- `POST /salons/:id/appointments`, `POST /salons/:id/orders`

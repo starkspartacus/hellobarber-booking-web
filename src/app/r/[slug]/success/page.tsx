@@ -1,0 +1,16 @@
+import { Suspense } from "react";
+import { SuccessContent } from "./success-content";
+
+export default function SuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
+  );
+}
