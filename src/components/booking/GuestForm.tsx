@@ -1,6 +1,7 @@
 "use client";
 
-import { COUNTRY_OPTIONS } from "@/lib/utils/guest";
+import { useEffect, useState } from "react";
+import { getCountries, type CountryOption } from "@/lib/api/countries";
 
 export interface GuestFormValues {
   firstName: string;
@@ -19,6 +20,28 @@ export function GuestForm({
   onChange: (v: GuestFormValues) => void;
   error?: string | null;
 }) {
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCountries()
+      .then((list) => {
+        if (!cancelled) setCountries(list);
+      })
+      .catch(() => {
+        if (!cancelled) setCountries([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCountriesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedCountry = countries.find((c) => c.code === values.countryCode);
+
   const field = (
     label: string,
     key: keyof GuestFormValues,
@@ -63,19 +86,31 @@ export function GuestForm({
           </span>
           <select
             value={values.countryCode}
+            disabled={countriesLoading}
             onChange={(e) =>
               onChange({ ...values, countryCode: e.target.value })
             }
             className="w-full rounded-2xl border border-outline/40 bg-surface px-3 py-2.5 text-foreground"
           >
-            {COUNTRY_OPTIONS.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
+            {countriesLoading ? (
+              <option value={values.countryCode}>Chargement…</option>
+            ) : (
+              countries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {c.name}
+                </option>
+              ))
+            )}
           </select>
         </label>
-        <div className="col-span-3">{field("Téléphone", "phone", { type: "tel", placeholder: "07 00 00 00 00" })}</div>
+        <div className="col-span-3">
+          {field("Téléphone", "phone", {
+            type: "tel",
+            placeholder: selectedCountry?.phoneCode
+              ? `${selectedCountry.phoneCode} 07 00 00 00 00`
+              : "07 00 00 00 00",
+          })}
+        </div>
       </div>
     </div>
   );

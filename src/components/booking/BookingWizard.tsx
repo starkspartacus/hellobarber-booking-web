@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DatePicker, DatePickerSummary } from "@/components/booking/DatePicker";
+import { DurationUnitsPicker } from "@/components/booking/DurationUnitsPicker";
 import { GuestForm, type GuestFormValues } from "@/components/booking/GuestForm";
 import { ServicePicker } from "@/components/booking/ServicePicker";
 import { SlotPicker } from "@/components/booking/SlotPicker";
+import { VisitModeSection } from "@/components/booking/VisitModeSection";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
 import { DuolingoProgress } from "@/components/ui/DuolingoProgress";
 import { registerGuest } from "@/lib/api/auth";
 import { createAppointment, getAvailableSlots } from "@/lib/api/salons";
@@ -20,6 +22,11 @@ import {
 } from "@/lib/utils/guest";
 import { messageFromApiError } from "@/lib/utils/errors";
 import { isAxiosSuccess } from "@/lib/api/client";
+import {
+  bookedDurationForUnits,
+  bookedPriceForUnits,
+  isPerTimeUnitPricing,
+} from "@/lib/utils/service-pricing";
 import { initialGuest, useBookingStore } from "@/store/booking-store";
 import type { AvailableSlotsResponse, SalonDetailResponse, ServiceItem } from "@/types/api";
 
@@ -36,33 +43,65 @@ export function BookingWizard({
 }) {
   const router = useRouter();
   const currency = resolveCurrency(detail.proCountryCode);
+  const homeVisitConfig = detail.salon?.homeVisitConfig;
+  const homeVisitEnabled = homeVisitConfig?.enabled === true;
+  const defaultCountry =
+    detail.proCountryCode?.trim() || "cote_d_ivoire";
+
   const {
     step,
     service,
     date,
     slot,
     guest,
+    bookedTimeUnits,
+    visitMode,
+    visitModeChosen,
+    homeVisit,
     submitting,
     setSalon,
     setStep,
     setService,
     setDate,
     setSlot,
+    setBookedTimeUnits,
+    setVisitMode,
+    resetVisitMode,
     setGuest,
     setSubmitting,
   } = useBookingStore();
 
   const [slotsData, setSlotsData] = useState<AvailableSlotsResponse | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [guestForm, setGuestForm] = useState<GuestFormValues>(
-    guest ?? initialGuest(),
-  );
+  const [guestForm, setGuestForm] = useState<GuestFormValues>(() => ({
+    ...(guest ?? initialGuest(defaultCountry)),
+    countryCode: guest?.countryCode ?? defaultCountry,
+  }));
   const [error, setError] = useState<string | null>(null);
+
+  const bookedDurationMinutes = useMemo(() => {
+    if (!service) return undefined;
+    if (isPerTimeUnitPricing(service)) {
+      return bookedDurationForUnits(service, bookedTimeUnits);
+    }
+    return service.durationMinutes;
+  }, [service, bookedTimeUnits]);
+
+  const servicePrice = useMemo(() => {
+    if (!service) return 0;
+    if (isPerTimeUnitPricing(service)) {
+      return bookedPriceForUnits(service, bookedTimeUnits);
+    }
+    return service.price;
+  }, [service, bookedTimeUnits]);
 
   useEffect(() => {
     setSalon(slug, salonId, salonName);
     if (!date) setDate(toIsoDate(new Date()));
-  }, [slug, salonId, salonName, setSalon, date, setDate]);
+    if (!homeVisitEnabled) {
+      setVisitMode("salon", null);
+    }
+  }, [slug, salonId, salonName, setSalon, date, setDate, homeVisitEnabled, setVisitMode]);
 
   const loadSlots = useCallback(async () => {
     if (!service || !date) return;
@@ -72,6 +111,7 @@ export function BookingWizard({
       const data = await getAvailableSlots(salonId, {
         date,
         serviceId: service._id,
+        durationMinutes: bookedDurationMinutes,
       });
       setSlotsData(data);
     } catch (e) {
@@ -81,7 +121,7 @@ export function BookingWizard({
     } finally {
       setSlotsLoading(false);
     }
-  }, [salonId, service, date]);
+  }, [salonId, service, date, bookedDurationMinutes]);
 
   useEffect(() => {
     if (step === "slot" && service && date) {
@@ -149,12 +189,29 @@ export function BookingWizard({
         return;
       }
       const clientName = `${guestForm.firstName.trim()} ${guestForm.lastName.trim()}`.trim();
-      await createAppointment(salonId, {
+      const payload: Parameters<typeof createAppointment>[1] = {
         serviceId: service._id,
         appointmentDate: slotToIsoUtc(date, slot),
-        visitMode: "salon",
+        visitMode,
         clientName,
-      });
+      };
+      if (isPerTimeUnitPricing(service)) {
+        payload.bookedTimeUnits = bookedTimeUnits;
+        payload.bookedDurationMinutes = bookedDurationMinutes;
+      }
+      if (visitMode === "home" && homeVisit) {
+        payload.homeVisit = {
+          address: homeVisit.address,
+          addressComplement: homeVisit.addressComplement,
+          city: homeVisit.city,
+          commune: homeVisit.commune,
+          phone: homeVisit.phone,
+          latitude: homeVisit.latitude,
+          longitude: homeVisit.longitude,
+          notes: homeVisit.notes,
+        };
+      }
+      await createAppointment(salonId, payload);
       const params = new URLSearchParams({
         type: "appointment",
         service: service.name,
@@ -170,8 +227,10 @@ export function BookingWizard({
     }
   };
 
+  const visitReady = !homeVisitEnabled || visitModeChosen;
+
   const canNext =
-    (step === "service" && service) ||
+    (step === "service" && service && visitReady) ||
     (step === "date" && date) ||
     (step === "slot" && slot) ||
     step === "guest" ||
@@ -189,15 +248,38 @@ export function BookingWizard({
       </h2>
 
       {step === "service" && (
-        <ServicePicker
-          services={detail.services}
-          selectedId={service?._id}
-          currency={currency}
-          onSelect={(s: ServiceItem) => {
-            setService(s);
-            goNext();
-          }}
-        />
+        <div className="space-y-5">
+          <ServicePicker
+            services={detail.services}
+            selectedId={service?._id}
+            currency={currency}
+            onSelect={(s: ServiceItem) => {
+              setService(s);
+              if (homeVisitEnabled) {
+                resetVisitMode();
+              }
+            }}
+          />
+          {service && isPerTimeUnitPricing(service) ? (
+            <DurationUnitsPicker
+              service={service}
+              units={bookedTimeUnits}
+              currency={currency}
+              onChange={setBookedTimeUnits}
+            />
+          ) : null}
+          {service && homeVisitEnabled && homeVisitConfig ? (
+            <VisitModeSection
+              salonId={salonId}
+              config={homeVisitConfig}
+              salonName={salonName}
+              currency={currency}
+              visitMode={visitMode}
+              homeVisit={homeVisit}
+              onSelect={setVisitMode}
+            />
+          ) : null}
+        </div>
       )}
 
       {step === "date" && (
@@ -221,21 +303,37 @@ export function BookingWizard({
       )}
 
       {step === "guest" && (
-        <GuestForm values={guestForm} onChange={setGuestForm} error={error} />
+        <GuestForm
+          values={guestForm}
+          onChange={setGuestForm}
+          error={error}
+        />
       )}
 
       {step === "confirm" && service && slot && (
-        <Card className="space-y-3 animate-pop">
+        <GlareCard className="space-y-3 animate-pop" glareColor="#58cc02">
           <p className="font-bold text-lg">{service.name}</p>
           <p className="text-primary font-black text-xl">
-            {formatMoney(service.price, currency)}
+            {formatMoney(servicePrice, currency)}
           </p>
+          {isPerTimeUnitPricing(service) ? (
+            <p className="text-xs text-muted-foreground">
+              {bookedTimeUnits} bloc{bookedTimeUnits > 1 ? "s" : ""} ·{" "}
+              {bookedDurationMinutes} min
+            </p>
+          ) : null}
           <p className="text-sm text-muted-foreground capitalize">
             {formatFrenchDate(date)} · {slot}
           </p>
           <p className="text-sm">{salonName}</p>
+          <p className="text-sm font-semibold">
+            {visitMode === "home" ? "🏠 À domicile" : "🏪 Au salon"}
+          </p>
+          {visitMode === "home" && homeVisit ? (
+            <p className="text-xs text-muted-foreground">{homeVisit.address}</p>
+          ) : null}
           <p className="text-xs text-muted-foreground">Paiement sur place</p>
-        </Card>
+        </GlareCard>
       )}
 
       {error && step !== "guest" ? (

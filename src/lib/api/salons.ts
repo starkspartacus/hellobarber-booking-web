@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api/client";
 import type {
   AppointmentPayload,
   AvailableSlotsResponse,
+  HomeVisitEstimate,
   OrderItemPayload,
   ProductItem,
   ResolvedBooking,
@@ -46,6 +47,18 @@ export async function createAppointment(
   body: AppointmentPayload,
 ): Promise<unknown> {
   const { data } = await apiClient.post(`salons/${salonId}/appointments`, body);
+  return data;
+}
+
+export async function estimateHomeVisit(
+  salonId: string,
+  latitude: number,
+  longitude: number,
+): Promise<HomeVisitEstimate> {
+  const { data } = await apiClient.get<HomeVisitEstimate>(
+    `salons/${salonId}/home-visit/estimate`,
+    { params: { latitude, longitude } },
+  );
   return data;
 }
 

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
+import { SuccessConfetti } from "@/components/magicui/SuccessConfetti";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
 
 export function SuccessContent() {
   const params = useParams();
@@ -18,15 +19,19 @@ export function SuccessContent() {
   const total = search.get("total");
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-16 text-center space-y-8 animate-pop">
-      <div className="text-6xl">🎉</div>
+    <div className="relative mx-auto max-w-lg px-4 py-16 text-center space-y-8 animate-pop">
+      <SuccessConfetti isOrder={isOrder} />
+      <div className="text-6xl animate-pop">🎉</div>
       <Badge tone="green" className="text-sm">
         {isOrder ? "Commande confirmée" : "Rendez-vous confirmé"}
       </Badge>
       <h1 className="text-3xl font-black text-foreground">
         C&apos;est bon !
       </h1>
-      <Card className="text-left space-y-3">
+      <GlareCard
+        className="text-left space-y-3"
+        glareColor={isOrder ? "#ff86c8" : "#58cc02"}
+      >
         {isOrder ? (
           <>
             <p className="text-sm text-muted-foreground">
@@ -61,7 +66,7 @@ export function SuccessContent() {
             </p>
           </>
         )}
-      </Card>
+      </GlareCard>
       <Link href={`/r/${slug}`}>
         <Button className="w-full" size="lg">
           Retour au salon

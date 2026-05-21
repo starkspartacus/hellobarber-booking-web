@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
 import { formatMoney } from "@/lib/utils/currency";
 import { cn } from "@/lib/cn";
 import type { ServiceItem } from "@/types/api";
@@ -37,11 +37,12 @@ export function ServicePicker({
             className="w-full text-left"
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            <Card
+            <GlareCard
               className={cn(
                 "animate-slide-up cursor-pointer",
                 selected && "ring-2 ring-primary border-primary/60",
               )}
+              glareColor={selected ? "#58cc02" : "#ffc37e"}
             >
               <div className="flex gap-3">
                 {svc.imageUrl ? (
@@ -69,11 +70,13 @@ export function ServicePicker({
                     </p>
                   ) : null}
                   <p className="mt-2 text-xs font-semibold text-info">
-                    {svc.durationMinutes} min
+                    {svc.durationPricingMode === "per_time_unit"
+                      ? `À partir de ${svc.minDurationUnits ?? 1} × ${svc.durationMinutes} min`
+                      : `${svc.durationMinutes} min`}
                   </p>
                 </div>
               </div>
-            </Card>
+            </GlareCard>
           </button>
         );
       })}

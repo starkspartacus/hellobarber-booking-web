@@ -77,6 +77,63 @@
   animation: pop 0.35s ease-out both;
 }
 
+/* Magic UI — Glare Hover (https://magicui.design/docs/components/glare-hover) */
+.glare-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: linear-gradient(
+    var(--gh-angle, -45deg),
+    transparent,
+    var(--gh-rgba, rgba(255, 195, 126, 0.35)),
+    transparent
+  );
+  background-size: var(--gh-size, 250%) var(--gh-size, 250%);
+  background-repeat: no-repeat;
+  background-position: -120% -120%;
+  transition: background-position var(--gh-duration, 650ms) ease;
+}
+
+.glare-hover:hover::before {
+  background-position: 120% 120%;
+}
+
+.glare-play-once::before {
+  transition: none;
+}
+
+.glare-play-once:hover::before {
+  transition: background-position var(--gh-duration, 650ms) ease;
+}
+
+/* Magic UI — Meteors (https://magicui.design/docs/components/meteors) */
+.meteor {
+  background: linear-gradient(to bottom, transparent, #ffc37e, transparent);
+  box-shadow: 0 0 12px 1px rgba(255, 195, 126, 0.45);
+}
+
+@keyframes meteor-fall {
+  0% {
+    transform: rotate(215deg) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(215deg) translateX(-420px);
+    opacity: 0;
+  }
+}
+
+.animate-meteor {
+  animation-name: meteor-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

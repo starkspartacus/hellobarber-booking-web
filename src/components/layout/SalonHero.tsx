@@ -1,6 +1,10 @@
+"use client";
+
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
+import { Meteors } from "@/components/magicui/Meteors";
 import type { SalonDocument } from "@/types/api";
+import Image from "next/image";
 
 export function SalonHero({
   salon,
@@ -12,23 +16,22 @@ export function SalonHero({
   reviewsCount?: number;
 }) {
   const location = [salon.commune, salon.city].filter(Boolean).join(", ");
+  const cover = salon.imageUrl || "/images/salon-welcome.png";
+
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="relative aspect-[21/9] bg-surface">
-        {salon.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={salon.imageUrl}
-            alt={salon.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-4xl font-black text-primary/30">
-            KOUP
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5">
+    <GlareCard className="overflow-hidden p-0" glareColor="#ffc37e">
+      <div className="relative aspect-[21/9] bg-surface overflow-hidden">
+        <Image
+          src={cover}
+          alt={salon.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 672px"
+          unoptimized={cover.startsWith("http")}
+        />
+        <Meteors number={12} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
           {salon.categoryLabel ? (
             <Badge tone="pink" className="mb-2">
               {salon.categoryLabel}
@@ -51,6 +54,6 @@ export function SalonHero({
           {salon.description}
         </p>
       ) : null}
-    </Card>
+    </GlareCard>
   );
 }

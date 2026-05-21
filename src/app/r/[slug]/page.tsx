@@ -6,7 +6,7 @@ import { AppOpenBanner } from "@/components/layout/AppOpenBanner";
 import { SalonHero } from "@/components/layout/SalonHero";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
 import {
   getSalonDetail,
   getSalonProducts,
@@ -69,7 +69,11 @@ export default async function SalonPublicPage({
         </h2>
         <div className="space-y-2">
           {detail.services.slice(0, 6).map((svc) => (
-            <Card key={svc._id} className="flex justify-between items-center py-3">
+            <GlareCard
+              key={svc._id}
+              className="flex justify-between items-center py-3"
+              glareColor="#58cc02"
+            >
               <div>
                 <p className="font-semibold">{svc.name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -77,7 +81,7 @@ export default async function SalonPublicPage({
                 </p>
               </div>
               <Badge tone="gold">{formatMoney(svc.price, currency)}</Badge>
-            </Card>
+            </GlareCard>
           ))}
         </div>
         {detail.services.length > 6 ? (
@@ -93,7 +97,7 @@ export default async function SalonPublicPage({
         <section className="space-y-3">
           <h2 className="text-lg font-black">Avis clients</h2>
           {detail.reviews.slice(0, 3).map((r) => (
-            <Card key={r._id} className="space-y-2">
+            <GlareCard key={r._id} className="space-y-2" glareColor="#1cb0f6">
               <div className="flex items-center gap-2">
                 <span className="text-primary font-bold">★ {r.rating}</span>
                 <span className="text-sm font-semibold">
@@ -103,7 +107,7 @@ export default async function SalonPublicPage({
               {r.comment ? (
                 <p className="text-sm text-muted-foreground">{r.comment}</p>
               ) : null}
-            </Card>
+            </GlareCard>
           ))}
         </section>
       ) : null}
@@ -113,12 +117,12 @@ export default async function SalonPublicPage({
           <h2 className="text-lg font-black">Boutique</h2>
           <div className="grid grid-cols-2 gap-3">
             {previewProducts.map((p) => (
-              <Card key={p._id} className="p-3">
+              <GlareCard key={p._id} className="p-3" glareColor="#ff86c8">
                 <p className="font-semibold text-sm line-clamp-2">{p.name}</p>
                 <p className="text-primary font-bold text-sm mt-1">
                   {formatMoney(p.price, p.currency ?? currency)}
                 </p>
-              </Card>
+              </GlareCard>
             ))}
           </div>
           <Link href={`/r/${slug}/shop`}>

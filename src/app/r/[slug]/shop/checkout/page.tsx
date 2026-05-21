@@ -46,6 +46,8 @@ export default function ShopCheckoutPage() {
     if (salonId) {
       getSalonDetail(salonId).then((detail) => {
         setCurrency(resolveCurrency(detail.proCountryCode));
+        const code = detail.proCountryCode?.trim() || "cote_d_ivoire";
+        setGuestForm((prev) => ({ ...prev, countryCode: code }));
       });
     }
   }, [salonId]);

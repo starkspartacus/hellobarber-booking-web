@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { GlareCard } from "@/components/ui/GlareCard";
 import { formatMoney } from "@/lib/utils/currency";
 import type { ProductItem } from "@/types/api";
 
@@ -20,7 +20,7 @@ export function ProductCard({
   const outOfStock = product.stock <= 0 && !hasVariants;
 
   return (
-    <Card className="flex flex-col h-full animate-slide-up">
+    <GlareCard className="flex flex-col h-full animate-slide-up" glareColor="#ff86c8">
       <div className="aspect-square rounded-2xl bg-surface overflow-hidden mb-3">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -71,6 +71,6 @@ export function ProductCard({
           Ajouter
         </Button>
       )}
-    </Card>
+    </GlareCard>
   );
 }
