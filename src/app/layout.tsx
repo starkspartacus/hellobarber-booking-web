@@ -13,9 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BOOKING_WEB_BASE ??
+      "https://koup-booking-web.vercel.app",
+  ),
   title: "KOUP — Réservation en ligne",
   description:
     "Réservez un rendez-vous ou commandez en boutique via le lien public de votre salon KOUP.",
+  openGraph: {
+    title: "KOUP — Réservation en ligne",
+    description:
+      "Prenez rendez-vous ou commandez chez votre salon via votre lien KOUP.",
+    siteName: "KOUP Booking",
+  },
 };
 
 export default function RootLayout({

@@ -58,12 +58,12 @@ npm run start
 ## Déploiement (Vercel recommandé)
 
 1. Importez le dépôt dans Vercel
-2. Variables d'environnement :
-   - `NEXT_PUBLIC_API_URL` → URL de production de l'API (ex. `https://api-hellobarber.haut-numerique.com/api`)
+2. Variables d'environnement **obligatoires sur Vercel** :
+   - `NEXT_PUBLIC_API_URL` → `https://api-hellobarber.haut-numerique.com/api`
    - `NEXT_PUBLIC_DEEP_LINK_SCHEME=koup`
-   - Optionnel : `NEXT_PUBLIC_PLAY_STORE_URL`, `NEXT_PUBLIC_APP_STORE_URL`
-3. Domaine personnalisé (ex. `booking.koup.app`) pointant vers le projet
-4. Partagez les liens `https://booking.koup.app/r/{bookingSlug}` depuis l'app pro
+   - Optionnel : `NEXT_PUBLIC_BOOKING_WEB_BASE=https://koup-booking-web.vercel.app`
+3. Domaine actuel : [https://koup-booking-web.vercel.app](https://koup-booking-web.vercel.app)
+4. Partagez les liens `https://koup-booking-web.vercel.app/r/{bookingSlug}` depuis l'app pro
 
 ### Autres hébergeurs
 

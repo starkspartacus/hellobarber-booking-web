@@ -44,7 +44,7 @@ export default function HomePage() {
           Partagez-le sur Instagram, WhatsApp ou votre site.
         </p>
         <p className="text-xs font-mono text-primary break-all">
-          https://booking.koup.app/r/votre-slug
+          https://koup-booking-web.vercel.app/r/votre-slug
         </p>
       </Card>
 
