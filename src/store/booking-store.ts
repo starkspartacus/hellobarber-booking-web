@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { ServiceItem, VisitMode } from "@/types/api";
 
-export type BookingStep = "service" | "date" | "slot" | "guest" | "confirm";
+export type BookingStep = "service" | "date" | "guest" | "confirm";
 
 export interface HomeVisitPayload {
   address: string;

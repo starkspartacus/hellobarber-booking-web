@@ -134,19 +134,19 @@ export function BookingWizard({
   }, [salonId, service, date, bookedDurationMinutes]);
 
   useEffect(() => {
-    if (step === "slot" && service && date) {
+    if (step === "date" && service && date) {
       loadSlots();
     }
   }, [step, service, date, loadSlots]);
 
   const goNext = () => {
-    const order = ["service", "date", "slot", "guest", "confirm"] as const;
+    const order = ["service", "date", "guest", "confirm"] as const;
     const i = order.indexOf(step);
     if (i < order.length - 1) setStep(order[i + 1]);
   };
 
   const goBack = () => {
-    const order = ["service", "date", "slot", "guest", "confirm"] as const;
+    const order = ["service", "date", "guest", "confirm"] as const;
     const i = order.indexOf(step);
     if (i > 0) setStep(order[i - 1]);
     else router.push(`/r/${slug}`);
@@ -241,8 +241,7 @@ export function BookingWizard({
 
   const canNext =
     (step === "service" && service && visitReady) ||
-    (step === "date" && date) ||
-    (step === "slot" && slot) ||
+    (step === "date" && date && slot) ||
     step === "guest" ||
     step === "confirm";
 
@@ -251,8 +250,7 @@ export function BookingWizard({
       <DuolingoProgress current={step} />
       <h2 className="text-xl font-black text-foreground">
         {step === "service" && "Choisir une prestation"}
-        {step === "date" && "Choisir une date"}
-        {step === "slot" && "Choisir un créneau"}
+        {step === "date" && "Date & Heure"}
         {step === "guest" && "Vos coordonnées"}
         {step === "confirm" && "Confirmer"}
       </h2>
@@ -293,23 +291,24 @@ export function BookingWizard({
       )}
 
       {step === "date" && (
-        <>
-          <DatePicker selected={date} onSelect={setDate} />
-          {date ? <DatePickerSummary date={date} /> : null}
-        </>
-      )}
-
-      {step === "slot" && service && (
-        <SlotPicker
-          data={slotsData}
-          selected={slot}
-          date={date}
-          onSelect={(s) => {
-            setSlot(s);
-            goNext();
-          }}
-          loading={slotsLoading}
-        />
+        <div className="space-y-6 animate-fade-in">
+          <div className="space-y-2">
+            <DatePicker selected={date} onSelect={setDate} />
+            {date ? <DatePickerSummary date={date} /> : null}
+          </div>
+          {service && (
+            <SlotPicker
+              data={slotsData}
+              selected={slot}
+              date={date}
+              onSelect={(s) => {
+                setSlot(s);
+                goNext();
+              }}
+              loading={slotsLoading}
+            />
+          )}
+        </div>
       )}
 
       {step === "guest" && (

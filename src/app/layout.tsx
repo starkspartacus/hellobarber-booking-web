@@ -48,7 +48,7 @@ export default function RootLayout({
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-outline/30 py-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} KOUP · HelloBarber
+          © {new Date().getFullYear()} KOUP . developpé par <a target="_blank" rel="noopener noreferrer" href="https://www.haut-numerique.com/">HNM</a>
         </footer>
       </body>
     </html>
