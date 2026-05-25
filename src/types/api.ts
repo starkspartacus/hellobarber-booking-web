@@ -44,6 +44,8 @@ export interface ServiceItem {
   durationPricingMode?: "fixed" | "per_time_unit";
   minDurationUnits?: number;
   maxDurationUnits?: number;
+  promoPercentage?: number;
+  promoEndDate?: string;
 }
 
 export interface ReviewItem {
@@ -81,6 +83,8 @@ export interface ProductItem {
   variants?: ProductVariant[];
   hasVariants?: boolean;
   currency?: string;
+  promoPercentage?: number;
+  promoEndDate?: string;
 }
 
 export interface AvailableSlotsResponse {

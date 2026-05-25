@@ -26,6 +26,7 @@ import {
   bookedDurationForUnits,
   bookedPriceForUnits,
   isPerTimeUnitPricing,
+  getDiscountedPrice,
 } from "@/lib/utils/service-pricing";
 import { initialGuest, useBookingStore } from "@/store/booking-store";
 import type { AvailableSlotsResponse, SalonDetailResponse, ServiceItem } from "@/types/api";
@@ -88,6 +89,15 @@ export function BookingWizard({
   }, [service, bookedTimeUnits]);
 
   const servicePrice = useMemo(() => {
+    if (!service) return 0;
+    let base = service.price;
+    if (isPerTimeUnitPricing(service)) {
+      base = bookedPriceForUnits(service, bookedTimeUnits);
+    }
+    return getDiscountedPrice(base, service.promoPercentage);
+  }, [service, bookedTimeUnits]);
+
+  const baseServicePrice = useMemo(() => {
     if (!service) return 0;
     if (isPerTimeUnitPricing(service)) {
       return bookedPriceForUnits(service, bookedTimeUnits);
@@ -313,9 +323,16 @@ export function BookingWizard({
       {step === "confirm" && service && slot && (
         <GlareCard className="space-y-3 animate-pop" glareColor="#58cc02">
           <p className="font-bold text-lg">{service.name}</p>
-          <p className="text-primary font-black text-xl">
-            {formatMoney(servicePrice, currency)}
-          </p>
+          <div className="flex items-end gap-3">
+            <p className="text-primary font-black text-xl">
+              {formatMoney(servicePrice, currency)}
+            </p>
+            {service.promoPercentage && service.promoPercentage > 0 && (
+              <p className="text-sm font-semibold text-muted-foreground line-through pb-0.5">
+                {formatMoney(baseServicePrice, currency)}
+              </p>
+            )}
+          </div>
           {isPerTimeUnitPricing(service) ? (
             <p className="text-xs text-muted-foreground">
               {bookedTimeUnits} bloc{bookedTimeUnits > 1 ? "s" : ""} ·{" "}

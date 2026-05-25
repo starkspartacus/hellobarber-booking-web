@@ -6,6 +6,7 @@ const tones = {
   blue: "bg-info/20 text-info border-info/40",
   pink: "bg-accent-pink/20 text-accent-pink border-accent-pink/40",
   muted: "bg-muted/30 text-muted-foreground border-outline/30",
+  red: "bg-red-500/20 text-red-500 border-red-500/40",
 } as const;
 
 export function Badge({

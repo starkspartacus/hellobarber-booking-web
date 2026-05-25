@@ -33,3 +33,8 @@ export function bookedPriceForUnits(service: ServiceItem, units: number): number
   );
   return service.price * u;
 }
+
+export function getDiscountedPrice(price: number, promoPercentage?: number): number {
+  if (!promoPercentage || promoPercentage <= 0) return price;
+  return price * (1 - promoPercentage / 100);
+}

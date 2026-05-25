@@ -8,6 +8,7 @@ import {
   bookedPriceForUnits,
   clampTimeUnits,
   isPerTimeUnitPricing,
+  getDiscountedPrice,
 } from "@/lib/utils/service-pricing";
 import type { ServiceItem } from "@/types/api";
 
@@ -29,7 +30,9 @@ export function DurationUnitsPicker({
   const clamped = clampTimeUnits(units, min, max);
   const unitMin = service.durationMinutes;
   const totalDur = bookedDurationForUnits(service, clamped);
-  const totalPrice = bookedPriceForUnits(service, clamped);
+  const basePrice = bookedPriceForUnits(service, clamped);
+  const totalPrice = getDiscountedPrice(basePrice, service.promoPercentage);
+  const hasPromo = service.promoPercentage && service.promoPercentage > 0;
 
   return (
     <GlareCard className="space-y-4 animate-fade-in" glareColor="#58cc02">
@@ -67,9 +70,16 @@ export function DurationUnitsPicker({
           +
         </Button>
       </div>
-      <p className="text-2xl font-black text-primary">
-        {formatMoney(totalPrice, currency)}
-      </p>
+      <div className="flex items-end gap-3">
+        <p className="text-2xl font-black text-primary">
+          {formatMoney(totalPrice, currency)}
+        </p>
+        {hasPromo && (
+          <p className="text-sm font-semibold text-muted-foreground line-through pb-1">
+            {formatMoney(basePrice, currency)}
+          </p>
+        )}
+      </div>
     </GlareCard>
   );
 }
