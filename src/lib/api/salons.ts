@@ -50,6 +50,20 @@ export async function createAppointment(
   return data;
 }
 
+export async function createGuestAppointment(
+  salonId: string,
+  body: AppointmentPayload & {
+    guestFirstName: string;
+    guestLastName: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    guestCountryCode?: string;
+  },
+): Promise<{ appointment: unknown; accountExists: boolean }> {
+  const { data } = await apiClient.post(`salons/${salonId}/appointments-guest`, body);
+  return data;
+}
+
 export async function estimateHomeVisit(
   salonId: string,
   latitude: number,
@@ -75,4 +89,18 @@ export async function createOrder(
 ): Promise<{ pickupCompletionCode?: string } & Record<string, unknown>> {
   const { data } = await apiClient.post(`salons/${salonId}/orders`, body);
   return data as { pickupCompletionCode?: string } & Record<string, unknown>;
+}
+
+export async function createGuestOrder(
+  salonId: string,
+  body: CreateOrderPayload & {
+    guestFirstName: string;
+    guestLastName: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    guestCountryCode?: string;
+  },
+): Promise<{ order: { pickupCompletionCode?: string } & Record<string, unknown>; accountExists: boolean }> {
+  const { data } = await apiClient.post(`salons/${salonId}/orders-guest`, body);
+  return data;
 }

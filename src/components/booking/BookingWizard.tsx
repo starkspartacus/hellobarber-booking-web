@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { GlareCard } from "@/components/ui/GlareCard";
 import { DuolingoProgress } from "@/components/ui/DuolingoProgress";
 import { registerGuest } from "@/lib/api/auth";
-import { createAppointment, getAvailableSlots } from "@/lib/api/salons";
+import { createAppointment, createGuestAppointment, getAvailableSlots } from "@/lib/api/salons";
 import { getAccessToken } from "@/lib/auth/token-store";
 import { formatMoney, resolveCurrency } from "@/lib/utils/currency";
 import { toIsoDate, slotToIsoUtc, formatFrenchDate } from "@/lib/utils/dates";
@@ -43,6 +43,10 @@ export function BookingWizard({
   detail: SalonDetailResponse;
 }) {
   const router = useRouter();
+  const [accountExistsModal, setAccountExistsModal] = useState<{ open: boolean; email?: string; phone?: string }>({ open: false });
+  const [guestEmailForLogin, setGuestEmailForLogin] = useState("");
+  const [guestPhoneForLogin, setGuestPhoneForLogin] = useState("");
+
   const currency = resolveCurrency(detail.proCountryCode);
   const homeVisitConfig = detail.salon?.homeVisitConfig;
   const homeVisitEnabled = homeVisitConfig?.enabled === true;
@@ -152,63 +156,36 @@ export function BookingWizard({
     else router.push(`/r/${slug}`);
   };
 
-  const ensureGuestAuth = async (): Promise<boolean> => {
-    if (getAccessToken()) return true;
-    const f = guestForm.firstName.trim();
-    const l = guestForm.lastName.trim();
-    const ph = guestForm.phone.trim();
-    if (!f || !l || !ph) {
-      setError("Prénom, nom et téléphone sont requis.");
-      return false;
-    }
-    const email = guestForm.email.trim() || generateGuestEmail();
-    const password = generateGuestPassword();
-    try {
-      await registerGuest({
-        firstName: f,
-        lastName: l,
-        email,
-        passwordHash: password,
-        countryCode: guestForm.countryCode,
-        phoneNumber: ph,
-      });
-      setGuest({ ...guestForm, email });
-      return true;
-    } catch (e) {
-      if (isAxiosSuccess(e)) {
-        setError(
-          messageFromApiError(
-            e.response?.data,
-            "Ce contact semble déjà exister. Utilisez un autre numéro.",
-          ),
-        );
-      } else {
-        setError("Inscription impossible. Réessayez.");
-      }
-      return false;
-    }
-  };
-
   const submitBooking = async () => {
     if (!service || !date || !slot) return;
     setSubmitting(true);
     setError(null);
     try {
-      if (!(await ensureGuestAuth())) {
+      const isAuth = !!getAccessToken();
+      const f = guestForm.firstName.trim();
+      const l = guestForm.lastName.trim();
+      const ph = guestForm.phone.trim();
+      const em = guestForm.email.trim();
+
+      if (!isAuth && (!f || !l || !ph)) {
+        setError("Prénom, nom et téléphone sont requis.");
         setSubmitting(false);
         return;
       }
-      const clientName = `${guestForm.firstName.trim()} ${guestForm.lastName.trim()}`.trim();
-      const payload: Parameters<typeof createAppointment>[1] = {
+
+      const clientName = isAuth ? undefined : `${f} ${l}`;
+      const payload: any = {
         serviceId: service._id,
         appointmentDate: slotToIsoUtc(date, slot),
         visitMode,
         clientName,
       };
+
       if (isPerTimeUnitPricing(service)) {
         payload.bookedTimeUnits = bookedTimeUnits;
         payload.bookedDurationMinutes = bookedDurationMinutes;
       }
+
       if (visitMode === "home" && homeVisit) {
         payload.homeVisit = {
           address: homeVisit.address,
@@ -221,16 +198,39 @@ export function BookingWizard({
           notes: homeVisit.notes,
         };
       }
-      await createAppointment(salonId, payload);
-      const params = new URLSearchParams({
-        type: "appointment",
-        service: service.name,
-        when: `${formatFrenchDate(date)} · ${slot}`,
-      });
-      router.push(`/r/${slug}/success?${params.toString()}`);
+
+      let accountExists = false;
+      if (isAuth) {
+        await createAppointment(salonId, payload);
+      } else {
+        const res = await createGuestAppointment(salonId, {
+          ...payload,
+          guestFirstName: f,
+          guestLastName: l,
+          guestEmail: em,
+          guestPhone: ph,
+          guestCountryCode: guestForm.countryCode,
+        });
+        accountExists = res.accountExists;
+      }
+
+      if (accountExists) {
+        setGuestEmailForLogin(em);
+        setGuestPhoneForLogin(ph);
+        setAccountExistsModal({ open: true, email: em, phone: ph });
+      } else {
+        const params = new URLSearchParams({
+          type: "appointment",
+          service: service.name,
+          when: `${formatFrenchDate(date)} · ${slot}`,
+        });
+        router.push(`/r/${slug}/success?${params.toString()}`);
+      }
     } catch (e) {
       if (isAxiosSuccess(e)) {
         setError(messageFromApiError(e.response?.data, "Réservation impossible."));
+      } else {
+        setError("Une erreur s'est produite lors de la réservation.");
       }
     } finally {
       setSubmitting(false);
@@ -391,6 +391,46 @@ export function BookingWizard({
           )}
         </div>
       </div>
+
+      {accountExistsModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-surface p-6 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-2xl">🎉</span>
+            </div>
+            <h2 className="mb-2 text-center text-xl font-black tracking-wide text-primary">
+              RÉSERVATION CONFIRMÉE
+            </h2>
+            <div className="mb-6 space-y-3 text-center text-sm leading-relaxed text-on-surface-variant">
+              <p>
+                Votre réservation a bien été prise en compte !
+              </p>
+              <p>
+                Nous avons détecté qu'un compte existe déjà avec {accountExistsModal.email ? `l'e-mail ${accountExistsModal.email}` : `le numéro ${accountExistsModal.phone}`}.
+              </p>
+              <p>
+                Pour retrouver et gérer vos réservations, connectez-vous à votre espace client sur l'application mobile ou via l'espace de connexion.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => {
+                  setAccountExistsModal({ open: false });
+                  const params = new URLSearchParams({
+                    type: "appointment",
+                    service: service?.name || "",
+                    when: date && slot ? `${formatFrenchDate(date)} · ${slot}` : "",
+                  });
+                  router.push(`/r/${slug}/success?${params.toString()}`);
+                }}
+                className="w-full font-bold"
+              >
+                COMPRIS, MERCI !
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
