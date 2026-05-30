@@ -200,10 +200,13 @@ export function BookingWizard({
       }
 
       let accountExists = false;
+      let paymentUrl: string | undefined;
+
       if (isAuth) {
-        await createAppointment(salonId, payload);
+        const res: any = await createAppointment(salonId, payload);
+        paymentUrl = res?.paymentUrl;
       } else {
-        const res = await createGuestAppointment(salonId, {
+        const res: any = await createGuestAppointment(salonId, {
           ...payload,
           guestFirstName: f,
           guestLastName: l,
@@ -212,6 +215,12 @@ export function BookingWizard({
           guestCountryCode: guestForm.countryCode,
         });
         accountExists = res.accountExists;
+        paymentUrl = res.appointment?.paymentUrl || res?.paymentUrl;
+      }
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
       }
 
       if (accountExists) {
